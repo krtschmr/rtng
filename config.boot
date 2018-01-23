@@ -78,6 +78,7 @@ firewall {
     name WAN_LOCAL {
         default-action drop
         description "WAN to router"
+        enable-default-log
         rule 10 {
             action accept
             description "Allow established/related"
@@ -160,6 +161,26 @@ interfaces {
             }
             vlan-aware disable
         }
+        vif 11 {
+            address 10.0.11.1/24
+            description "room 1"
+            firewall {
+                in {
+                    modify balance
+                }
+            }
+            mtu 1500
+        }
+        vif 12 {
+            address 10.0.12.1/24
+            description "room 2"
+            firewall {
+                in {
+                    modify balance
+                }
+            }
+            mtu 1500
+        }
     }
 }
 load-balance {
@@ -192,6 +213,36 @@ service {
                 start 10.0.0.38 {
                     stop 10.0.0.243
                 }
+                static-mapping ROOM_1_SWITCH {
+                    ip-address 10.0.1.11
+                    mac-address 78:8a:20:0b:f9:6e
+                }
+                static-mapping ROOM_2_SWITCH {
+                    ip-address 10.0.1.12
+                    mac-address 78:8a:20:09:ac:24
+                }
+            }
+        }
+        shared-network-name ROOM1 {
+            authoritative enable
+            subnet 10.0.11.0/24 {
+                default-router 10.0.11.1
+                dns-server 10.0.11.1
+                lease 86400
+                start 10.0.11.100 {
+                    stop 10.0.11.254
+                }
+            }
+        }
+        shared-network-name ROOM2 {
+            authoritative enable
+            subnet 10.0.12.0/24 {
+                default-router 10.0.12.1
+                dns-server 10.0.12.1
+                lease 86400
+                start 10.0.12.100 {
+                    stop 10.0.12.254
+                }
             }
         }
         use-dnsmasq disable
@@ -200,6 +251,8 @@ service {
         forwarding {
             cache-size 150
             listen-on switch0
+            listen-on switch0.11
+            listen-on switch0.12
         }
     }
     gui {
@@ -222,6 +275,9 @@ service {
     ssh {
         port 22
         protocol-version v2
+    }
+    unms {
+        disable
     }
 }
 system {
@@ -264,7 +320,7 @@ system {
             }
         }
     }
-    time-zone UTC
+    time-zone Asia/Bangkok
 }
 
 
